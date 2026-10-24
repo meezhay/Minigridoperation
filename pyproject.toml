@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name            = "minigrid-mdp"
@@ -20,3 +20,6 @@ drl  = ["stable-baselines3>=2.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["minigrid_mdp/tests"]
+
+[tool.setuptools.packages.find]
+include = ["minigrid_mdp*"]
