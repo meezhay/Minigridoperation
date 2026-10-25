@@ -1,0 +1,43 @@
+# Mini-grid system parameters — Uganda rural mini-grid
+
+simulation:
+  timestep_hours: 1.0          # hourly resolution
+  episode_length: 24           # one day per episode
+  seed: 42
+
+pv:
+  rated_power_kw: 36.0         # pv: reference-site ratio, 1.52 kWp per kW of peak load
+  performance_ratio: 0.80      # [2] accounts for dust, wiring, mismatch losses
+  irradiance_peak_hour: 13     # 1 PM local time — Nigerian solar noon
+  irradiance_sigma_frac: 0.15  # stochastic ±15% of deterministic curve [3]
+
+battery:
+  capacity_kwh: 54.0           # reference-site ratio, 1.5 kWh per kWp
+  max_charge_rate_kw: 27.0     # 0.5C
+  max_discharge_rate_kw: 27.0  # 0.5C, covers the 23.6 kW peak
+  round_trip_efficiency: 0.92  # [4] LFP chemistry assumed
+  initial_soc: 0.70
+  min_soc: 0.20                # hard DoD limit (80% DoD max) [4]
+  max_soc: 0.95
+  degradation_per_cycle: 0.0002  # 0.02% capacity loss per full cycle [4]
+  stress_threshold_dod: 0.60   # DoD beyond which degradation accelerates
+
+diesel:
+  rated_power_kw: 25.0         # diesel: carries the full peak alone (real design: split into units)
+  min_load_fraction: 0.30      # generators shouldn't run below 30% load [2]
+  fuel_price_usd_per_litre: 0.60  # [2] Nigerian market price (2020, ~NGN 230)
+  fuel_consumption_l_per_kwh: 0.30 # [2] ~300 g/kWh BSFC at rated load
+  startup_cost_usd: 0.50       # wear-and-tear per start [3]
+  hourly_fixed_cost_usd: 0.20  # idling + maintenance amortisation [3]
+
+load:
+  peak_demand_kw: 23.6         # Agoro measured hourly peak
+  base_demand_kw: 2.0          # Agoro essential load at night
+  peak_hour: 20                # 8 PM — cooking + lighting peak [2]
+  peak_width_hours: 3.0        # Gaussian width of evening peak
+  demand_sigma_frac: 0.12      # ±12% stochastic variation [3]
+
+reward:
+  unmet_load_cost_per_kwh: 10.00   # reliability first: higher than the worst-case cost of one generator hour
+  fuel_cost_weight: 1.0            # pass-through of actual fuel cost
+  battery_stress_cost_per_dod: 0.50 # $/% DoD beyond threshold [4]

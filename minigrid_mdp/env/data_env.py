@@ -8,13 +8,14 @@ from minigrid_mdp.real_data import HOURS_PER_YEAR
 class DataDrivenEnv(MiniGridEnv):
     """Same grid, actions and reward; solar and demand come from a year of real hourly data."""
 
-    def __init__(self, pv_per_kwp, load_kw, *args, days_per_episode=1, **kwargs):
+    def __init__(self, pv_per_kwp, load_kw, *args, days_per_episode=1, start_days=None, **kwargs):
         super().__init__(*args, **kwargs)
         self._pv_series = pv_per_kwp * self.pv_cfg["rated_power_kw"]
         self._load_series = load_kw
         self._days_per_episode = days_per_episode
         self.ep_len = 24 * days_per_episode
         self._start_hour = 0
+        self._start_days = list(start_days) if start_days is not None else None
 
     def reset(self, *, seed=None, options=None):
         self._start_hour = 24 * self._pick_start_day(seed, options)
@@ -23,6 +24,10 @@ class DataDrivenEnv(MiniGridEnv):
     def _pick_start_day(self, seed, options):
         if options and "start_day" in options:
             return int(options["start_day"])
+        if self._start_days is not None:
+            if seed is not None:
+                return self._start_days[seed % len(self._start_days)]
+            return int(self._np_rng.choice(self._start_days))
         rng = np.random.default_rng(seed) if seed is not None else self._np_rng
         return int(rng.integers(365 - self._days_per_episode + 1))
 

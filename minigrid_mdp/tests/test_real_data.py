@@ -33,3 +33,14 @@ def test_env_serves_the_real_series():
     first_hour = 24 * 10
     assert obs[1] == pytest.approx(pv[first_hour] * env.pv_cfg["rated_power_kw"], abs=1e-4)
     assert obs[2] == pytest.approx(load[first_hour], abs=1e-4)
+
+
+@needs_data
+def test_env_only_uses_allowed_start_days():
+    from minigrid_mdp.env.data_env import DataDrivenEnv
+
+    pv = load_pvgis_per_kwp(DATA_DIR / "lamwo_solar_2019.csv")
+    load = load_hourly_load_kw(DATA_DIR / "agoro_fixed_loads.csv")
+    env = DataDrivenEnv(pv, load, start_days=[14, 70])
+    obs, _ = env.reset(seed=1)
+    assert obs[2] == pytest.approx(load[70 * 24], abs=1e-4)
