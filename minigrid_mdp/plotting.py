@@ -8,6 +8,8 @@ def plot_day(day, initial_soc, min_soc, title=None):
     ax_power.plot(day.hour, day.load_kw, label="Demand", color="steelblue")
     ax_power.step(day.hour, day.diesel_kw, where="mid", label="Diesel", color="dimgray")
     ax_power.bar(day.hour, day.unmet_load_kw, label="Unmet demand", color="crimson", alpha=0.5)
+    shed_kw = day.curtailed_kw.where(day.action == 4, 0.0)
+    ax_power.bar(day.hour, shed_kw, bottom=day.unmet_load_kw, label="Shed demand", color="purple", alpha=0.4)
     ax_power.set_ylabel("kW")
     ax_power.legend()
 
