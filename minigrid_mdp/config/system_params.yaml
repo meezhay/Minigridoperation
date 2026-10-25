@@ -1,12 +1,4 @@
 # Mini-grid system parameters — 50 kW Nigerian rural mini-grid
-# Primary sources:
-#   [1] IRENA (2016). "Scaling Up Mini-grids for the Last Billion."
-#   [2] Balogun et al. (2020). "Techno-economic analysis of solar-diesel hybrid
-#       systems for rural electrification in Nigeria." Energy Reports 6.
-#   [3] Dufo-López & Bernal-Agustín (2015). "Multi-objective design of PV–wind–
-#       diesel–hydrogen–battery systems." Renewable Energy 82.
-#   [4] Wöhrle et al. (2021). "Battery degradation models for mini-grid sizing."
-#       Applied Energy 290.
 
 simulation:
   timestep_hours: 1.0          # hourly resolution
