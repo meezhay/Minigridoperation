@@ -179,7 +179,7 @@ class MiniGridEnv(gym.Env):
     def _pv_output(self, hour: int) -> float:
         """Gaussian irradiance curve with multiplicative noise."""
         p    = self.pv_cfg
-        peak = p["rated_power_kw"] * p["panel_efficiency"] * p["performance_ratio"]
+        peak = p["rated_power_kw"] * p["performance_ratio"]
         # Daylight bell centred at peak_hour, std ≈ 3 h so sunrise~7, sunset~19
         det  = peak * math.exp(-0.5 * ((hour - p["irradiance_peak_hour"]) / 3.0) ** 2)
         noise_mult = 1.0 + self._np_rng.normal(0, p["irradiance_sigma_frac"])
