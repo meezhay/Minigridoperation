@@ -29,3 +29,11 @@ def compare(results):
 def action_share_by_hour(log):
     shares = pd.crosstab(log.hour, log.action, normalize="index")
     return shares.rename(columns=dict(enumerate(ACTION_NAMES))).round(2)
+
+def run_weeks(env, agent, n_weeks=4, days_per_week=7):
+    log = run_days(env, agent, n_weeks)
+    return log.assign(episode=log.episode * days_per_week + log.step // 24)
+
+
+def steady_state_days(log, days_per_week=7):
+    return log[log.episode % days_per_week != 0]
