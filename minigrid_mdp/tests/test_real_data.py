@@ -20,3 +20,16 @@ def test_solar_peaks_at_local_noon():
 def test_load_daily_energy_is_plausible():
     load = load_hourly_load_kw(DATA_DIR / "agoro_fixed_loads.csv")
     assert 50 < load.sum() / 365 < 200
+
+
+@needs_data
+def test_env_serves_the_real_series():
+    from minigrid_mdp.env.data_env import DataDrivenEnv
+
+    pv = load_pvgis_per_kwp(DATA_DIR / "lamwo_solar_2019.csv")
+    load = load_hourly_load_kw(DATA_DIR / "agoro_fixed_loads.csv")
+    env = DataDrivenEnv(pv, load)
+    obs, _ = env.reset(options={"start_day": 10})
+    first_hour = 24 * 10
+    assert obs[1] == pytest.approx(pv[first_hour] * env.pv_cfg["rated_power_kw"], abs=1e-4)
+    assert obs[2] == pytest.approx(load[first_hour], abs=1e-4)
