@@ -233,9 +233,12 @@ class MiniGridEnv(gym.Env):
                              die["rated_power_kw"] * die["min_load_fraction"] + load_kw)
             supply_kw  = pv_kw + diesel_kw
             surplus_kw = supply_kw - load_kw
-            charge_kw  = min(surplus_kw, bat_room_kw)
-            battery_kw = -charge_kw  # negative = charging
-            unmet_load_kw = max(0.0, load_kw - supply_kw + charge_kw)
+            if surplus_kw >= 0:
+                charge_kw  = min(surplus_kw, bat_room_kw)
+                battery_kw = -charge_kw  # negative = charging
+            else:
+                battery_kw    = min(-surplus_kw, bat_avail_kw)
+                unmet_load_kw = -surplus_kw - battery_kw
 
         elif action == ACTION_DISCHARGE_BATTERY:
             # PV + battery serve load; no diesel
@@ -256,9 +259,13 @@ class MiniGridEnv(gym.Env):
             supply_kw  = pv_kw + diesel_kw
             surplus_kw = supply_kw - load_kw
             # try to store surplus in battery
-            charge_kw  = min(surplus_kw, bat_room_kw)
-            battery_kw = -charge_kw
-            curtailed_kw = max(0.0, surplus_kw - charge_kw)
+            if surplus_kw >= 0:
+                charge_kw    = min(surplus_kw, bat_room_kw)
+                battery_kw   = -charge_kw
+                curtailed_kw = surplus_kw - charge_kw
+            else:
+                battery_kw    = min(-surplus_kw, bat_avail_kw)
+                unmet_load_kw = -surplus_kw - battery_kw
 
         elif action == ACTION_SOLAR_ONLY:
             # Only PV; battery absorbs surplus or supplements deficit
