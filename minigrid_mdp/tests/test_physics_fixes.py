@@ -31,3 +31,12 @@ def test_empty_battery_shortfall_is_unmet_not_free(action):
     flows = env._dispatch(action, pv_kw=0.0, load_kw=load_kw, hour=20)
     assert flows["battery_kw"] == pytest.approx(0.0)
     assert flows["unmet_load_kw"] == pytest.approx(10.0)
+
+
+def test_startup_cost_charged_once_per_start():
+    env = MiniGridEnv()
+    env.reset(seed=0)
+    first = env.step(ACTION_RUN_DIESEL_ONLY)[4]["flows"]
+    second = env.step(ACTION_RUN_DIESEL_ONLY)[4]["flows"]
+    assert first["diesel_started"] is True
+    assert second["diesel_started"] is False

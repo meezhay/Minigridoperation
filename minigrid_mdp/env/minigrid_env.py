@@ -210,6 +210,7 @@ class MiniGridEnv(gym.Env):
         die  = self.die_cfg
 
         soc_before    = self._soc
+        was_diesel_on = self._diesel_on
         capacity_kwh  = bat["capacity_kwh"] * self._health  # effective capacity
 
         # Available battery energy above min_soc
@@ -303,6 +304,7 @@ class MiniGridEnv(gym.Env):
             "load_kw":        load_kw,
             "diesel_kw":      diesel_kw,
             "diesel_on":      diesel_on,
+            "diesel_started": diesel_on and not was_diesel_on,
             "battery_kw":     battery_kw,   # + = discharge, - = charge
             "unmet_load_kw":  max(0.0, unmet_load_kw),
             "curtailed_kw":   curtailed_kw,
@@ -354,7 +356,7 @@ class MiniGridEnv(gym.Env):
         diesel_kwh      = flows["diesel_kw"] * self.dt
         fuel_litres     = diesel_kwh * die["fuel_consumption_l_per_kwh"]
         fuel_cost       = fuel_litres * die["fuel_price_usd_per_litre"]
-        startup_cost    = die["startup_cost_usd"] if flows["diesel_on"] else 0.0
+        startup_cost    = die["startup_cost_usd"] if flows["diesel_started"] else 0.0
         fixed_cost      = die["hourly_fixed_cost_usd"] * self.dt if flows["diesel_on"] else 0.0
         r_fuel          = -(fuel_cost + startup_cost + fixed_cost) * r["fuel_cost_weight"]
 
