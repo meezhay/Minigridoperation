@@ -190,7 +190,7 @@ class MiniGridEnv(gym.Env):
         l    = self.load_cfg
         base = l["base_demand_kw"]
         peak_add = (l["peak_demand_kw"] - base) * math.exp(
-            -0.5 * ((hour - l["peak_hour"]) / l["peak_width_hours"]) ** 2
+            -0.5 * (min(abs(hour - l["peak_hour"]), 24 - abs(hour - l["peak_hour"])) / l["peak_width_hours"]) ** 2
         )
         det  = base + peak_add
         noise_mult = 1.0 + self._np_rng.normal(0, l["demand_sigma_frac"])
