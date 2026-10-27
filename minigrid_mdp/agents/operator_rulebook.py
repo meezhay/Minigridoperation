@@ -1,4 +1,4 @@
-"""Rulebook based on real EMONE site practice: start diesel below 30% SOC, charge to 50%, then stop."""
+"""Rulebook based on real operator practice: start diesel below 30% SOC, charge to 50%, then stop."""
 from minigrid_mdp.agents.rule_based_agent import RuleBasedAgent
 from minigrid_mdp.env.minigrid_env import (
     ACTION_CHARGE_FROM_DIESEL,
