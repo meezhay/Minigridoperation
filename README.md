@@ -1,10 +1,11 @@
 # Mini-Grid Dispatch RL
 
-A Gymnasium simulation of a **50 kW solar–battery–diesel mini-grid** serving a rural Nigerian village, and an honest test of whether a reinforcement-learning agent (PPO) can operate it better than a fixed rulebook.
+A Gymnasium simulation of a **solar–battery–diesel mini-grid**, first for a simulated Nigerian village and then on a year of real data from a village in Uganda, and an honest test of whether a reinforcement-learning agent (PPO) can operate it better than a fixed rulebook.
 
-**Short answer:** yes, but by much less than first reported. On continuous multi-week runs, a PPO agent trained on week-long episodes spends **about 6% less on fuel than the rulebook at the same reliability**, and is cheaper on 19 of 24 test days. The originally published figure (26% fewer diesel hours) came from a simulation with several bugs; see [Corrections](#corrections-v1--v2).
 
-All data is synthetic. Results are directional, not field-validated.
+**Short answer:** not meaningfully. On a simulated village, a PPO agent trained on week-long episodes spends about 6% less on fuel than a simple rulebook. On a year of **real data from Agoro, Uganda**, with outages priced the way operators treat them, a trained agent **ties** with a one-line rule taken from real microgrid practice. The originally published figure (26% fewer diesel hours) came from a simulation with several bugs; see [Corrections](#corrections-v1--v2).
+
+Simulated-village results are synthetic; real-village results use a year of measured data from one site. Both are directional, not field-validated.
 
 ---
 
@@ -20,6 +21,7 @@ The notebooks in `notebooks/` tell the story in order. Each one is readable with
 | 04 | `04_fixing_the_score` | PPO retrained on a corrected reward; a fair 13% saving on single days, and where it comes from |
 | 05 | `05_the_morning_after` | Battery carried over between days: the single-day agent fails before dawn |
 | 06 | `06_living_with_tomorrow` | PPO trained on continuous weeks; the final, honest result |
+| 07 | `07_a_real_village` | A year of real demand and solar data from Agoro, Uganda; an operator rule from real practice; the AI raced on 13 unseen weeks |
 
 ---
 
@@ -36,6 +38,29 @@ Steady-state days from 4 continuous weeks (battery carried over between days; fi
 Unmet demand counts energy (kWh not delivered, including deliberately shed load) as a share of kWh demanded.
 
 The single-day agent looks cheaper, but only because it leaves about 6% of demand unserved between 2 am and 8 am: it learned a schedule that assumes every night starts with a 70% battery, as every training day did. The week-trained agent saves fuel mainly in the morning: it lets the battery carry the quiet pre-dawn hours, arriving at sunrise with room to store more solar.
+
+---
+
+## Real village results (v3)
+
+**Data:** a full year of hourly demand from Agoro, a mini-grid village in northern Uganda (homes plus productive use such as grain mills, about 105 kWh/day, peaking at 23.6 kW), and hourly PVGIS solar output for the same district. See [Data credits](#data-credits).
+
+**System:** sized by scaling the design ratios of a commercial solar microgrid in Nigeria (about 1.5 kWp of solar per kW of peak demand, and 1.5 kWh of battery per kWp): 36 kWp solar, a 54 kWh LFP battery, and a 25 kW generator able to carry the full peak.
+
+**Operator rule** (from real site practice): start the generator below 30% battery, charge to 50%, then stop; solar serves the load whenever the sun is up.
+
+**Fair test:** the year is split into 52 weeks; every 4th week (13 in total) is held out. The AI trains on the other 39 and is judged only on the held-out weeks, with the battery carried over between days.
+
+| 13 held-out weeks | Fuel cost/day | Unmet demand |
+|---|---|---|
+| Original rulebook | $8.28 | 0% |
+| Operator rule | $6.27 | 0.13% |
+| PPO, outages priced at $2/kWh | $4.16 | 0.62% |
+| **PPO, outages priced at $10/kWh** | **$6.10** | **0.06%** |
+
+At $2 per unserved kWh, the agent buys its fuel saving with outages: at dawn, leaving about 1 kWh unserved cost $2.00, while starting the generator cost $2.05. Priced at $10, above the worst-case cost of one generator hour, outages fall by 90% and the fuel saving disappears. Day by day, the agent was cheaper on 44 of 78 test days, which is not a significant difference.
+
+Separately, about 70 kWh of solar is wasted per day in Agoro because the battery fills by early afternoon. That is a design and demand-timing limit no dispatch policy can fix.
 
 ---
 
@@ -71,7 +96,7 @@ Note that the generator alone (30 kW) cannot cover the 35 kW evening peak; the b
 r = − fuel − startup − fixed − VoLL × (unmet + shed) − battery_stress − daylight_diesel_penalty
 ```
 
-- **VoLL** = $2.00/kWh, applied to both unmet and deliberately shed demand
+- **VoLL** = $2.00/kWh in the simulated village and $10.00/kWh in Agoro, applied to both unmet and deliberately shed demand
 - **Daylight diesel penalty**: when diesel runs while PV > 5 kW, the available PV energy is shadow-priced at the fuel rate
 
 ---
@@ -100,7 +125,8 @@ The originally published version is preserved at tag [`v1-published`](../../tree
 
 ## Known limitations
 
-- **Synthetic data only.** No real irradiance, load or operational data yet.
+- **One real village.** Agoro's demand and solar come from different years (solar 2019; demand undated). Demand units (kW) and time zone are assumed, pending confirmation from the data's authors.
+- **Single generator.** The reference site switches several generators on as needed; the model uses one, and assumes fuel always arrives.
 - **PV curve tails.** The Gaussian solar curve gives about 0.4–2.6 kW between 4 and 6 am, before a real sunrise (≈ 4 kWh/day).
 - **Wasted solar is under-logged.** Under `discharge_battery` and `shed_load`, surplus PV is neither stored nor recorded as curtailed. This does not affect costs (wasted solar is unpriced) but undercounts curtailment.
 - **Linear fuel model.** Fuel use is proportional to output; real generators are less efficient at part load.
@@ -110,7 +136,9 @@ The originally published version is preserved at tag [`v1-published`](../../tree
 
 ## Roadmap
 
-- Real hourly irradiance for a specific Nigerian site, and real or measured load profiles
+- Operator interviews to decide the next focus: battery wear, wasted solar, or outages from fuel supply
+- Priority-based load shedding (e.g. keep two of four feeders on) instead of all-or-nothing
+- A Nigerian site with real operator data
 - Multiple training seeds and confidence intervals
 - Part-load generator efficiency curve
 - Joint sizing and dispatch: how much of the remaining waste is fixed by a larger battery
@@ -124,10 +152,13 @@ minigrid_mdp/
 ├── env/
 │   ├── minigrid_env.py      # Gymnasium environment (v2 physics and reward)
 │   ├── week_env.py          # Same environment, one-week episodes
+│   ├── data_env.py          # Real hourly solar and demand data; train/test week split
 │   └── legacy_reward.py     # Original v1 reward, used only to reproduce the hack (notebook 03)
-├── agents/                  # Rule-based, random, and DRL (SB3 model wrapper) agents
+├── agents/                  # Rulebooks (original and operator practice), random, and DRL agents
 ├── config/
-│   └── system_params.yaml   # Physical and reward parameters
+│   ├── system_params.yaml        # Simulated village
+│   └── system_params_agoro.yaml  # Agoro system and reliability-first reward
+├── real_data.py             # Loads PVGIS solar (UTC → local time) and demand series
 ├── metrics.py               # Multi-day runs and summary metrics
 ├── plotting.py              # One-day plot helper
 ├── training.py              # PPO training with the original hyperparameters
@@ -136,13 +167,18 @@ minigrid_mdp/
 ├── logs/                    # v1 logs, kept for reference
 └── tests/
 
-notebooks/                   # The v2 notebook series (01–06)
+notebooks/                   # The v2 notebook series (01–07)
 models/
 ├── ppo_minigrid.zip         # v1 model (published results)
 ├── ppo_v1_reward.zip        # Original reward, corrected physics (notebook 03)
 ├── ppo_fixed_reward.zip     # Corrected reward, one-day episodes (notebook 04)
-└── ppo_week_trained.zip     # Corrected reward, one-week episodes (notebook 06)
+├── ppo_week_trained.zip     # Corrected reward, one-week episodes (notebook 06)
+├── ppo_agoro_week.zip           # Agoro, outages at $2/kWh
+└── ppo_agoro_week_reliable.zip  # Agoro, outages at $10/kWh
+
 train_ppo.py                 # v1 training script; writes to ppo_minigrid.zip
+
+data/raw/uganda_agoro/       # Agoro demand and solar data, with source note
 ```
 
 ## Quickstart
@@ -165,3 +201,7 @@ The v1 simulation and agents were built iteratively with Claude Code. The v2 rev
 ## References
 
 The parameter citations in the original version could not all be verified and have been withdrawn. Parameter values should be treated as illustrative until replaced with verified sources in the next version.
+
+## Data credits
+
+The Agoro demand and Lamwo solar data come from SEL-Columbia's [mini-grid_generation_system_design](https://github.com/SEL-Columbia/mini-grid_generation_system_design) repository, accompanying Wu et al., "Leveraging load shedding and daytime loads to improve mini-grid economics", *Energy Policy*. Used with the authors' permission.
